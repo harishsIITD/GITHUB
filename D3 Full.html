@@ -1,0 +1,229 @@
+# This Python 3 environment comes with many helpful analytics libraries installed
+# It is defined by the kaggle/python docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load in 
+
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+# Input data files are available in the "../input/" directory.
+# For example, running this (by clicking run or pressing Shift+Enter) will list the files in the input directory
+
+from subprocess import check_output
+print(check_output(["ls", "../input"]).decode("utf8"))
+
+# Any results you write to the current directory are saved as output.
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+    <title>Assets Status</title>  <!--Web title-->
+	<script src="http://d3js.org/d3.v3.min.js" language="JavaScript"></script>
+	
+    <script src="liquidFillGauge.js" language="JavaScript"></script>
+	<style>   <!--Styling options for the table being created to hold the charts-->
+table, th, td {
+    border: 2px solid black;
+	font size:20px;
+	cell padding:50px;
+}
+.liquidFillGaugeText { font-family: Helvetica; font-weight: bold; } 
+     
+</style>
+   
+
+	<script type="text/javascript" src="d3.js"></script><!--D3 Library-->
+	<script type="text/javascript" src="crossfilter.js"></script><!--SLice and Dice the data library-->
+	<script type="text/javascript" src="dc.js"></script><!--D3 chart library-->
+	<script type="text/javascript" src="FileSaver.js"></script><!--Download the data library-->
+	<script src="liquidFillGauge.js" language="JavaScript"></script><!--COde library language-->
+    <meta charset="UTF-8">       <!--Character database -->
+    <link rel="stylesheet" type="text/css" href="bootstrap.min.css">  <!--Provides style for the webpage-->
+    <link rel="stylesheet" type="text/css" href="dc.css"/>             <!--Provides the style for the charts-->
+</head>
+<body>
+
+
+<h1> Classification of Assets in a Fund Portfolio</h1>  <!--Chart Box Title -->
+<br>            <!--Line Break-->
+<div class="container">         <!-- Provides the frame for the charts to be created-->
+
+<table style="width:87%"> 
+<!--Experiment and see-->
+<tr>  <!--Opens a row-->
+		<td colspan="4" font size="14px" bgcolor="#A9A9A9"><h5>Select Port folio</h5></td>  <!--Opens a column on the row-->
+	</tr>
+		
+	<tr>
+		<td colspan ="4" width="600px"><div id ="chart-row-port">
+		<div class="reset" style="visibility: hidden;">SELECTED: <span class="filter"></span>
+      <a href="javascript:portRowChart.filterAll();dc.redrawAll();">reset</a> <!--Reset button styles-->
+		</div></td>
+	
+	</tr>
+	<tr>  <!--Opens a row-->
+		<td colspan="4" font size="14px" bgcolor="#A9A9A9"><h5>Scenario1</h5></td>  <!--Opens a column on the row-->
+	</tr>
+	<tr>
+
+		<tr>
+		<th bgcolor="#808080"><h6>Scenario1</h6></th>   <!--Table header-->
+		<th bgcolor="#808080"><h6>Scenario2</h6></th>
+		<th bgcolor="#808080"><h6>Scenario3</h6></th>
+			
+	</tr>
+			<tr><td width="600px"><div id ="chart-row-sc1">
+		<div class="reset" style="visibility: hidden;">SELECTED: <span class="filter"></span>
+      <a href="javascript:sc1RowChart.filterAll();dc.redrawAll();">reset</a> <!--Reset button styles-->
+		</div></td>
+			
+			
+			<td width="600px"><div id ="chart-row-sc2">
+		<div class="reset" style="visibility: hidden;">SELECTED: <span class="filter"></span>
+      <a href="javascript:sc2RowChart.filterAll();dc.redrawAll();">reset</a> <!--Reset button styles-->
+		</div></td>
+		
+			<td width="600px"><div id ="chart-row-sc3">
+		<div class="reset" style="visibility: hidden;">SELECTED: <span class="filter"></span>
+      <a href="javascript:sc3RowChart.filterAll();dc.redrawAll();">reset</a> <!--Reset button styles-->
+		</div></td>
+		
+			
+	
+</tr><!--closes the row--> 
+
+
+
+
+
+<tr>  <!--Placing download button-->
+	<td width="200px" colspan="4" bgcolor="#808080"><div style="clear: both"><button class="btn" id="download" ><strong>Download Table</strong></button></div></td>
+</tr>
+
+<tr><!--Placing the table -->
+	<td width="200px" colspan="4"><div id="table" style="clear: both; margin-top: 30px;" font-size="10px"></div></td>
+ 
+</tr>
+
+
+ <!--Callin all the libraries used-->
+ <link rel="stylesheet" type="text/css" href="bootstrap.min.css">  <!--Provides style for the webpage-->
+    <link rel="stylesheet" type="text/css" href="dc.css"/>             <!--Provides the style for the charts-->
+ <script type="text/javascript" src="d3.js"></script><!--D3 Library-->
+<script type="text/javascript" src="crossfilter.js"></script><!--SLice and Dice the data library-->
+<script type="text/javascript" src="dc.js"></script><!--D3 chart library-->
+<script type="text/javascript" src="FileSaver.js"></script><!--Download the data library-->
+<script src="liquidFillGauge.js" language="JavaScript"></script><!--COde library language-->
+<script type="text/javascript">
+
+
+var portRowChart=dc.rowChart("#chart-row-port");
+sc1RowChart=dc.rowChart("#chart-row-sc1");
+sc2RowChart=dc.rowChart("#chart-row-sc2");
+sc3RowChart=dc.rowChart("#chart-row-sc3");
+table = dc.dataTable('#table');
+
+
+
+d3.csv("portstatus.csv", function(error, scData) {
+
+// normalize/parse data
+scData.forEach(function(d) {
+    d.Assets = d.Assets.match(/\d+/);
+	
+
+});
+
+
+var ndx = crossfilter(scData),
+    portDim  = ndx.dimension(function(d) {return d.Portfolio;}),
+	P1statusDim  = ndx.dimension(function(d) {return d.Scenario1_Rating;}),
+    P2statusDim = ndx.dimension(function(d) {return d.Scenario2_Rating;}),
+	P3statusDim = ndx.dimension(function(d) {return d.Scenario3_Rating;}),
+	weightDim=ndx.dimension(function(d) {return d.Weightage;}),
+	weightageperName1=P1statusDim.group().reduceSum(function(d) {return +d.Weightage;});
+	weightageperName2=P2statusDim.group().reduceSum(function(d) {return +d.Weightage;});
+	weightageperName3=P3statusDim.group().reduceSum(function(d) {return +d.Weightage;});
+	portPerName = portDim.group().reduceSum(function(d) {return +d.Assets;});
+
+	
+sc1RowChart
+    .width(400).height(300)
+    .dimension(weightDim)
+    .group(weightageperName1)
+	.ordinalColors(['#7171C6','#7F9A65','#FF9900','#6495ED'])
+    .elasticX(true)
+	.controlsUseVisibility(true);
+
+	
+sc2RowChart
+    .width(400).height(300)
+    .dimension(weightDim)
+    .group(weightageperName2)
+	.ordinalColors(['#7171C6','#7F9A65','#FF9900','#6495ED'])
+    .elasticX(true)
+	.controlsUseVisibility(true);
+
+sc3RowChart
+    .width(400).height(300)
+    .dimension(weightDim)
+    .group(weightageperName3)
+	.ordinalColors(['#7171C6','#7F9A65','#FF9900','#6495ED'])
+    .elasticX(true)
+	.controlsUseVisibility(true);
+
+
+	
+
+	
+portRowChart
+    .width(1200).height(300)
+    .dimension(portDim)
+    .group(portPerName)
+	.ordinalColors(['#7171C6','#7F9A65','#FF9900','#6495ED'])
+    .elasticX(true)
+	.controlsUseVisibility(true);
+table
+    .dimension(portDim)
+	.size(100)
+	.sortBy(function (d) {
+            return d.Portfolio;
+        })
+    .group(function(d) {
+        return d.value;
+    })
+    .showGroups(false)
+    .columns(["Portfolio","Ticker","Weightage","Scenario1_Rating","Scenario2_Rating","Scenario3_Rating"]);	
+
+	
+   
+d3.select('#download')
+    .on('click', function() {
+        var blob = new Blob([d3.csv.format(portDim.top(Infinity))], {type: "text/csv;charset=utf-8"});
+        saveAs(blob, 'data.csv');
+    });
+
+
+	
+	dc.renderAll();<!--to draw the charts-->
+});
+	
+	
+	
+
+	
+	
+
+	
+</script>
+
+
+		
+	
+
+</div>
+
+
+</script>
+</body>
+</html>

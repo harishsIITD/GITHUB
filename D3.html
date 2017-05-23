@@ -1,0 +1,276 @@
+# This Python 3 environment comes with many helpful analytics libraries installed
+# It is defined by the kaggle/python docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load in 
+
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+# Input data files are available in the "../input/" directory.
+# For example, running this (by clicking run or pressing Shift+Enter) will list the files in the input directory
+
+from subprocess import check_output
+print(check_output(["ls", "../input"]).decode("utf8"))
+
+# Any results you write to the current directory are saved as output.
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>D3 Dashboard</title>  <!--Web title-->
+    <meta charset="UTF-8">       <!--Character database -->
+    <link rel="stylesheet" type="text/css" href="bootstrap.min.css">  <!--Provides style for the webpage-->
+    <link rel="stylesheet" type="text/css" href="dc.css"/>             <!--Provides the style for the charts-->
+</head>
+<body>
+
+
+<h1> Classification of Assets in a Fund Portfolio</h1>  <!--Chart Box Title -->
+<br>            <!--Line Break-->
+<div class="container">         <!-- Provides the frame for the charts to be created-->
+<style>   <!--Styling options for the table being created to hold the charts-->
+table, th, td {
+    border: 2px solid black;
+	font size:20px;
+	cell padding:50px;
+}
+     
+</style>
+<table style="width:100%">    <!--Experiment and see-->
+	<tr>  <!--Opens a row-->
+		<td colspan="4" font size="14px" bgcolor="#A9A9A9"><h5>CLICK ON THE GRAPH TO Portfolio</h5></td>  <!--Opens a column on the row-->
+	</tr>
+	<tr>
+		<td colspan ="4" width="600px"><div id ="chart-row-port">
+		<div class="reset" style="visibility: hidden;">SELECTED: <span class="filter"></span>
+      <a href="javascript:portRowChart.filterAll();dc.redrawAll();">reset</a> <!--Reset button styles-->
+		</div></td>
+	
+	</tr>
+	<tr>
+		<th bgcolor="#808080"><h6>Sector-wise Distribution of Assets </h6></th>   <!--Table header-->
+		<th bgcolor="#808080"><h6>No of   Assets according to their Liquidity Status</h6></th>
+		<th bgcolor="#808080"><h6>Geographic Distribution of  Assets</h6></th>
+	
+	</tr><!--closes the row-->
+	
+	
+	<tr>
+		<td width="200px" ><div id="chart-row-spenders" >   <!--Placing the div class that will call the chart in this particular place-->
+		 <div class="reset" style="visibility: hidden;">SELECTED: <span class="filter"></span>
+      <a href="javascript:spenderRowChart.filterAll();dc.redrawAll();">reset</a> <!--Reset button styles-->
+		</div></td>
+		<td width="200px" ><div id="chart-ring-status">
+		 <div class="reset" style="visibility: hidden;">SELECTED: <span class="filter"></span>
+      <a href="javascript:statusRingChart.filterAll();dc.redrawAll();">reset</a>
+		</div></td>
+		<td width="200px"><div id="chart-hist-country">
+			<div class="reset" style="visibility: hidden;">SELECTED: <span class="filter"></span>
+      <a href="javascript:countryHistChart.filterAll();dc.redrawAll();">reset</a></div></td>
+	  </tr>
+	
+	<tr>
+		<th font size="14px" bgcolor="#808080"><h6>Currency-wise Distribution of Assets</h6></th>
+		<th bgcolor="#808080"><h6>Distribution of Assets according to the type of Brokers handling them</h6></th>
+		<th bgcolor="#808080"><h6>Distribution of Assets according to the Exchange Structure</h6></th>
+	</tr>
+	<tr>
+	<tr>
+		<td width="200px"><div id="chart-hist-spend">
+			<div class="reset" style="visibility: hidden;">SELECTED: <span class="filter"></span>
+      <a href="javascript:spendHistChart.filterAll();dc.redrawAll();">reset</a></div></td>
+		<td width="200px"><div id="chart-pie-broker">
+		 <div class="reset" style="visibility: hidden;">SELECTED: <span class="filter"></span>
+      <a href="javascript:brokerPieChart.filterAll();dc.redrawAll();">reset</a>
+		</div></td>
+	    <td width="200px"><div id="chart-pie-exchange">
+		 <div class="reset" style="visibility: hidden;">SELECTED: <span class="filter"></span>
+      <a href="javascript:exchangePieChart.filterAll();dc.redrawAll();">Reset</a>
+		</div></td>
+		</tr>
+	<tr>  <!--Placing download button-->
+	<td width="200px" colspan="4" bgcolor="#808080"><div style="clear: both"><button class="btn" id="download" ><strong>Download Table</strong></button></div></td>
+	</tr>
+<tr><!--Placing the table -->
+	<td width="200px" colspan="4"><div id="table" style="clear: both; margin-top: 30px;" font-size="10px"></div></td>
+ 
+</tr>
+
+
+ <!--Callin all the libraries used-->
+ <script type="text/javascript" src="d3.js"></script><!--D3 Library-->
+<script type="text/javascript" src="crossfilter.js"></script><!--SLice and Dice the data library-->
+<script type="text/javascript" src="dc.js"></script><!--D3 chart library-->
+<script type="text/javascript" src="FileSaver.js"></script><!--Download the data library-->
+<script src="liquidFillGauge.js" language="JavaScript"></script><!--COde library language-->
+<script type="text/javascript">
+<!--Define the variables that will call the chart -->
+var statusRingChart   = dc.pieChart("#chart-ring-status"),
+    brokerPieChart   = dc.pieChart("#chart-pie-broker"),
+    spendHistChart  = dc.barChart("#chart-hist-spend"),
+	countryHistChart  = dc.barChart("#chart-hist-country"),
+	exchangePieChart   = dc.pieChart("#chart-pie-exchange"),
+	spenderRowChart = dc.rowChart("#chart-row-spenders"),
+	portRowChart=dc.rowChart("#chart-row-port"),
+	table = dc.dataTable('#table');
+	
+    
+	
+
+<!--var table = dc.dataTable('#table');
+<!--Load the external file-->
+ d3.csv("resultSc1.csv", function(error, spendData) {
+
+// normalize/parse data
+spendData.forEach(function(d) {
+    d.Assets = d.Assets.match(/\d+/);
+	
+
+});
+
+function remove_empty_bins(source_group) {
+    return {
+        all:function () {
+            return source_group.all().filter(function(d) {
+                return d.value != 0;
+            });
+        }
+    };
+}
+
+<!--Crossfilter the data-->
+var ndx = crossfilter(spendData),
+    statusDim  = ndx.dimension(function(d) {return d.Asset_wise_Rating;}),
+    spendDim = ndx.dimension(function(d) {return d.Currency_denomination;}),
+	countryDim = ndx.dimension(function(d) {return d.Geography_Country;}),
+	portDim  = ndx.dimension(function(d) {return d.Portfolio;}),
+    nameDim  = ndx.dimension(function(d) {return d.Sector;}),
+    brokerDim  = ndx.dimension(function(d) {return d.Diversity_of_broker_dealers;}),
+	
+	exchangeDim  = ndx.dimension(function(d) {return d.Exchange_structure;}),
+	spendPerStatus = statusDim.group().reduceSum(function(d) {return +d.Assets;}),
+	portPerName = portDim.group().reduceSum(function(d) {return +d.Assets;}),
+    spendPerName = nameDim.group().reduceSum(function(d) {return +d.Assets;}),
+	spendPerBroker = brokerDim.group().reduceSum(function(d) {return +d.Assets;}),
+	spendPerExchange = exchangeDim.group().reduceSum(function(d) {return +d.Assets;}),
+	
+    spendHist    = spendDim.group().reduceCount(),
+    nonEmptyHist = remove_empty_bins(spendHist)
+	countryHist    = countryDim.group().reduceCount(),
+    nonEmptyHist = remove_empty_bins(spendHist)
+
+<!--Drawing the chart-->
+statusRingChart
+    .width(300).height(300)<!--width and height of the chart-->
+    .dimension(statusDim)<!--count the categories in the variable to count-->
+    .group(spendPerStatus)<!--count the number of variables in each category measured in the simension variable-->
+	.cx(180)<!--Position the chart-->
+	.ordinalColors(['#539DC2','#7171C6',])<!--Color tag-->
+    .innerRadius(0)
+	.externalRadiusPadding(40)<!--Placing the chart some distance from the table border-->
+	.controlsUseVisibility(true)<!--TO use with the reset button-->
+	 .on('pretransition', function(chart) {
+        chart.selectAll('text.pie-slice').text(function(d) {
+            return d.data.key + ' ' + dc.utils.printSingleValue((d.endAngle - d.startAngle) / (2*Math.PI) * 100) + '%';
+        })
+    });<!--for displaying the percentages-->
+ 	
+
+	
+countryHistChart
+    .width(400).height(300)
+    .dimension(countryDim)
+    .group(countryHist)
+    .x(d3.scale.ordinal())
+    .xUnits(dc.units.ordinal)
+    .elasticX(true)
+    .elasticY(true)
+	.ordinalColors(['#196F3D'])
+	.yAxisLabel("No of Assets")
+	
+	.controlsUseVisibility(true);
+
+spendHistChart
+    .width(400).height(300)
+    .dimension(spendDim)
+    .group(spendHist)
+    .x(d3.scale.ordinal())
+    .xUnits(dc.units.ordinal)
+    .elasticX(true)
+    .elasticY(true)
+	.ordinalColors(['#0D4F8B'])
+	.yAxisLabel("No of Assets")
+	.controlsUseVisibility(true);
+portRowChart
+    .width(400).height(300)
+    .dimension(portDim)
+    .group(portPerName)
+	.ordinalColors(['#CC6600'])
+    .elasticX(true)
+	.controlsUseVisibility(true);
+
+spenderRowChart
+    .width(400).height(300)
+    .dimension(nameDim)
+    .group(spendPerName)
+	.ordinalColors(['#CC6600'])
+    .elasticX(true)
+	.controlsUseVisibility(true);
+
+brokerPieChart
+    .width(300).height(300)
+    .dimension(brokerDim)
+    .group(spendPerBroker)
+	.cx(150)
+	.ordinalColors(['#AAAAFF','#99CC99','#88ACE0']) 
+    .innerRadius(50)
+	.externalRadiusPadding(40)
+	.controlsUseVisibility(true)
+	 .on('pretransition', function(chart) {
+        chart.selectAll('text.pie-slice').text(function(d) {
+            return d.data.key + ' ' + dc.utils.printSingleValue((d.endAngle - d.startAngle) / (2*Math.PI) * 100) + '%';
+        })
+    });
+
+
+	
+exchangePieChart
+    .width(300).height(300)
+    .dimension(exchangeDim)
+    .group(spendPerExchange)
+	.cx(150)
+	.ordinalColors(['#7171C6','#7F9A65','#FF9900','#6495ED'])
+    .innerRadius(0)
+	.externalRadiusPadding(40)
+	.controlsUseVisibility(true)
+	 .on('pretransition', function(chart) {
+        chart.selectAll('text.pie-slice').text(function(d) {
+            return d.data.key + ' ' + dc.utils.printSingleValue((d.endAngle - d.startAngle) / (2*Math.PI) * 100) + '%';
+        })
+    });	
+	
+	table
+    .dimension(spendDim)
+	.size(100)
+	.sortBy(function (d) {
+            return d.Ticker;
+        })
+    .group(function(d) {
+        return d.value;
+    })
+    .showGroups(false)
+    .columns(["Sector","Security Type","Security","Ticker","Brokers Rating","Security age & time to maturity Rating","Difference between Bid/Ask rating","Diversity of broker dealers Rating","Exchange structure Rating","Central clearing requirements and capabilities Rating","Overall riskiness Rating","Currency denomination Rating","30 day Volatility index number Rating","Position sizes (% Net) Rating","Issue/issuer credit quality Rating","Geography Rating","Position as a % of Avg. Daily Volume Rating","Asset_wise_Rating"]);	
+   
+d3.select('#download')
+    .on('click', function() {
+        var blob = new Blob([d3.csv.format(nameDim.top(Infinity))], {type: "text/csv;charset=utf-8"});
+        saveAs(blob, 'data.csv');
+    });
+
+	
+	dc.renderAll();<!--to draw the charts-->
+});
+</script>
+
+</div>
+</body>
+</html>
